@@ -151,7 +151,7 @@ void loop() {
           client.print ('.');
           
           client.print (dat [3], DEC); // display the temperature of decimal places;
-          client.println ('°F');
+          client.println ('F');
           // end TempHumid
           client.println("<br />");
           client.println("<br />Debug:<br/>");
