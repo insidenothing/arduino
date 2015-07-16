@@ -123,16 +123,16 @@ void loop() {
 
             int sensorReading = analogRead(0);
             if (sensorReading > 1000){
-              client.print("Patrick is at his Desk<br />"); 
+              client.print("Patrick is at his Desk A0>1000<br />"); 
             }else{
-              client.print("Patrick is away from his Desk<br />");
+              client.print("Patrick is away from his DeskA0>1000<br />");
             }
             
            int sensorReading5 = analogRead(5);
-            if (sensorReading5 < 250){
-              client.print("Lights are detected as being on.<br />"); 
+            if (sensorReading5 < 200){
+              client.print("Lights are detected as being on A5>200<br />"); 
             }else{
-              client.print("Lights are detected as being off.<br />");
+              client.print("Lights are detected as being off A5<200<br />");
             }
             
           // adding in TempHumid
@@ -183,7 +183,7 @@ void loop() {
     client.stop();
     Serial.println("data sent");
     // turn off backlight after 3s delay
-    //delay(3000);
+    delay(30);
     Serial.write(18);
     Serial.write(21);
   }
