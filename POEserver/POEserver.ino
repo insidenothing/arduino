@@ -112,12 +112,10 @@ void loop() {
           // send a tone
           Serial.write(209);
           Serial.write(220);
-          Serial.write(225);
-          Serial.write(230);
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
-          client.println("Refresh: 30");  // refresh the page automatically every 5 sec
+          client.println("Refresh: 60");  // refresh the page automatically every 5 sec
           client.println();
           client.println("<!DOCTYPE HTML>");
           client.println("<html>");
@@ -129,32 +127,41 @@ void loop() {
             }else{
               client.print("Patrick is away from his Desk<br />");
             }
-  
+            
+           int sensorReading5 = analogRead(5);
+            if (sensorReading5 < 250){
+              client.print("Lights are detected as being on.<br />"); 
+            }else{
+              client.print("Lights are detected as being off.<br />");
+            }
+            
           // adding in TempHumid
           client.print ("Current humdity =");
           client.print (dat [0], DEC); // display the humidity-bit integer;
           client.print ('.');
           client.print (dat [1], DEC); // display the humidity decimal places;
           client.println ('%');
+          client.print("<br />");
           client.print ("Current temperature =");
           client.print (dat [2], DEC); // display the temperature of integer bits;
           client.print ('.');
           client.print (dat [3], DEC); // display the temperature of decimal places;
           client.println ('C');
           // end TempHumid
-          
+          client.println("<br />");
+          client.println("<br />Debug:<br/>");
           // output the value of each analog input pin
-          //for (int analogChannel = 1; analogChannel < 6; analogChannel++) {
-          //  int sensorReading = analogRead(analogChannel);
-          //  client.print("analog input ");
-          //  client.print(analogChannel);
-          // client.print(" is ");
-          //  client.print(sensorReading);
-          //  client.println("<br />");
-          //}
+          for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
+            int sensorReading = analogRead(analogChannel);
+            client.print("analog input ");
+            client.print(analogChannel);
+           client.print(" is ");
+            client.print(sensorReading);
+            client.println("<br />");
+          }
           
           client.println("<br />");
-          client.print("<small>30 second auto refresh</small>");
+          client.print("<small>1 minute auto refresh</small>");
           client.println("<br />");
           client.print("<small>Arduino POE Ethernet <br> Simplytronics Wide Angle PIR <br> Parallax 4x30 LCD <br> KY015 DHT11 Temperature and humidity sensor</small>");
           client.println("</html>");
@@ -176,7 +183,7 @@ void loop() {
     client.stop();
     Serial.println("data sent");
     // turn off backlight after 3s delay
-    delay(3000);
+    //delay(3000);
     Serial.write(18);
     Serial.write(21);
   }
