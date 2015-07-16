@@ -71,6 +71,8 @@ void start_test () {
 }
 // end temphumid
 
+
+
 void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
@@ -125,28 +127,31 @@ void loop() {
             if (sensorReading > 1000){
               client.print("Patrick is at his Desk A0>1000<br />"); 
             }else{
-              client.print("Patrick is away from his DeskA0>1000<br />");
+              client.print("Patrick is away from his Desk A0>1000<br />");
             }
             
            int sensorReading5 = analogRead(5);
-            if (sensorReading5 < 200){
-              client.print("Lights are detected as being on A5>200<br />"); 
+            if (sensorReading5 < 100){
+              client.print("Day Light is detected A5>100<br />"); 
+            }else if (sensorReading5 < 200){
+              client.print("Office Lights are detected as being on A5>200<br />"); 
             }else{
-              client.print("Lights are detected as being off A5<200<br />");
+              client.print("Office Lights are detected as being off A5<200<br />");
             }
             
           // adding in TempHumid
-          client.print ("Current humdity =");
+          client.print ("Current humdity is ");
           client.print (dat [0], DEC); // display the humidity-bit integer;
           client.print ('.');
           client.print (dat [1], DEC); // display the humidity decimal places;
           client.println ('%');
           client.print("<br />");
-          client.print ("Current temperature =");
-          client.print (dat [2], DEC); // display the temperature of integer bits;
+          client.print ("Current temperature is ");
+          client.print (dat [2] * 9 / 5 + 32, DEC); // display the temperature of integer bits;
           client.print ('.');
+          
           client.print (dat [3], DEC); // display the temperature of decimal places;
-          client.println ('C');
+          client.println ('°F');
           // end TempHumid
           client.println("<br />");
           client.println("<br />Debug:<br/>");
@@ -160,7 +165,7 @@ void loop() {
             client.println("<br />");
           }
           
-          client.println("<br />");
+          //client.println("<iframe src='http://10.1.10.247/videostream.asf?user=patrick&pwd=lox2stay'></iframe><br />");
           client.print("<small>1 minute auto refresh</small>");
           client.println("<br />");
           client.print("<small>Arduino POE Ethernet <br> Simplytronics Wide Angle PIR <br> Parallax 4x30 LCD <br> KY015 DHT11 Temperature and humidity sensor</small>");
