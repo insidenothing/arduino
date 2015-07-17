@@ -26,25 +26,17 @@ void setup()
 //-------- Write characters on the display ------------------
 // NOTE: Cursor Position: (CHAR, LINE) start at 0  
   lcd.setCursor(0,0); //Start at character 4 on line 0
-  lcd.print("Hello, world!");
+  lcd.print("Hello Patrick");
   delay(1000);
   lcd.setCursor(0,1);
-  lcd.print("HI!YourDuino.com");
-  delay(8000);  
-
-// Wait and then tell user they can start the Serial Monitor and type in characters to
-// Display. (Set Serial Monitor option to "No Line Ending")
-  lcd.clear();
-  lcd.setCursor(0,0); //Start at character 0 on line 0
-  lcd.print("Use Serial Mon");
-  lcd.setCursor(0,1);
-  lcd.print("Type to display");  
-
+  lcd.print("Bluetooth Ready");
+  delay(1000);  
 }
  
 void loop()
 {
   // receive data
+ 
  digitalWrite(EN, LOW);//Enable Receiving Data
  if (Serial.available()) {
     val = Serial.read();
@@ -57,6 +49,5 @@ void loop()
     delay(500);
     digitalWrite(ledPin, LOW);
     delay(500);
-    
  }
 }
