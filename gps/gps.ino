@@ -50,32 +50,32 @@ void setup()
   //
   byte settingsArray[] = {0x03, 0xFA, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //
   configureUblox(settingsArray);
-  lcdSerial.write(208); 
-  lcdSerial.write(215); 
+  lcdSerial.write(208);
+  lcdSerial.write(215);
 }
 
 void loop()
 {
-  while (gpsSerial.available() > 0){
+  while (gpsSerial.available() > 0) {
     gps.encode(gpsSerial.read());
-    if (gps.location.isUpdated()){
+    if (gps.location.isUpdated()) {
       // Output to LCD
-      lcdSerial.write(231); 
-      lcdSerial.print("LATITUDE "); 
+      lcdSerial.write(231);
+      lcdSerial.print("LATITUDE ");
       lcdSerial.print(gps.location.lat(), 6);
-      lcdSerial.print("LONGITUDE "); 
+      lcdSerial.print("LONGITUDE ");
       lcdSerial.print(gps.location.lng(), 6);
-      lcdSerial.print("ALTITUDE "); 
+      lcdSerial.print("ALTITUDE ");
       lcdSerial.print(gps.altitude.meters());
-    }else{
+    } else {
       // Output to Debug
       Serial.print("Sentences that failed checksum=");
       Serial.println(gps.failedChecksum());
-       
+
       // Testing overflow in SoftwareSerial is sometimes useful too.
       Serial.print("Soft Serial device overflowed? ");
       Serial.println(gpsSerial.overflow() ? "YES!" : "No");
-      
+
       Serial.println(gps.location.lat(), 6); // Latitude in degrees (double)
       Serial.println(gps.location.lng(), 6); // Longitude in degrees (double)
       Serial.print(gps.location.rawLat().negative ? "-" : "+");
@@ -107,7 +107,7 @@ void loop()
       Serial.println(gps.altitude.feet()); // Altitude in feet (double)
       Serial.println(gps.satellites.value()); // Number of satellites in use (u32)
       Serial.println(gps.hdop.value()); // Horizontal Dim. of Precision (100ths-i32)
-    }   
+    }
     delay(2000);
   }
 }
