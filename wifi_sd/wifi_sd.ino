@@ -1,29 +1,18 @@
-
 #include <SPI.h>
 #include <WiFi.h>
 #include <SD.h>
 
-
-
-
-
 File myFile;
 
 void setup() {
-  // initialize serial and wait for the port to open:
   Serial.begin(9600);
   while(!Serial) ;
-
   Serial.print("Initializing SD card...");
-
   if (!SD.begin(4)) {
     Serial.println("initialization failed!");
     return;
   }
-  Serial.println("initialization done.");
-
-
-  // attempt to connect using WEP encryption:
+  Serial.println("initialization good.");
   Serial.println("Initializing Wifi...");
   printMacAddress();
 
