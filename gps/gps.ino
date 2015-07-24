@@ -1,14 +1,17 @@
 #include <SoftwareSerial.h>
-#include <TinyGPS.h>
+#include "TinyGPS++.h"
+TinyGPSPlus gps;
 
 boolean gpsStatus[] = {false, false, false, false, false, false, false};
 unsigned long start;
+int year;
+byte month, day, hour, minutes, second, hundredths;
+unsigned long fix_age;
 
 //HardwareSerial gpsSerial(Serial1);
 SoftwareSerial gpsSerial(2, 3); // create gps sensor connection
 SoftwareSerial lcdSerial(4, 5); // create LCD display connection
 
-TinyGPS gps;
 
 
 void setup()
@@ -47,36 +50,66 @@ void setup()
   //
   byte settingsArray[] = {0x03, 0xFA, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //
   configureUblox(settingsArray);
+  lcdSerial.write(208); 
+  lcdSerial.write(215); 
 }
 
 void loop()
 {
-  while (1) {
-    if (gpsSerial.available())
-    {
-      int c = gpsSerial.read();
-      if (gps.encode(c))
-      {
-        float flat, flon;
-        unsigned long fix_age; // returns +- latitude/longitude in degrees
-        gps.f_get_position(&flat, &flon, &fix_age);
-        if (fix_age == TinyGPS::GPS_INVALID_AGE)
-          Serial.println("No fix detected");
-        else if (fix_age > 5000)
-          Serial.println("Warning: possible stale data!");
-        else
-          Serial.println("Data is current.");
-      }
+  while (gpsSerial.available() > 0){
+    gps.encode(gpsSerial.read());
+    if (gps.location.isUpdated()){
+      // Output to LCD
+      lcdSerial.write(231); 
+      lcdSerial.print("LATITUDE "); 
+      lcdSerial.print(gps.location.lat(), 6);
+      lcdSerial.print("LONGITUDE "); 
+      lcdSerial.print(gps.location.lng(), 6);
+      lcdSerial.print("ALTITUDE "); 
+      lcdSerial.print(gps.altitude.meters());
     }else{
-      lcdSerial.print("GPS:         OFFLINE");
-    } 
+      // Output to Debug
+      lcdSerial.write(220); 
+      Serial.println(gps.location.lat(), 6); // Latitude in degrees (double)
+      Serial.println(gps.location.lng(), 6); // Longitude in degrees (double)
+      Serial.print(gps.location.rawLat().negative ? "-" : "+");
+      Serial.println(gps.location.rawLat().deg); // Raw latitude in whole degrees
+      Serial.println(gps.location.rawLat().billionths);// ... and billionths (u16/u32)
+      Serial.print(gps.location.rawLng().negative ? "-" : "+");
+      Serial.println(gps.location.rawLng().deg); // Raw longitude in whole degrees
+      Serial.println(gps.location.rawLng().billionths);// ... and billionths (u16/u32)
+      Serial.println(gps.date.value()); // Raw date in DDMMYY format (u32)
+      Serial.println(gps.date.year()); // Year (2000+) (u16)
+      Serial.println(gps.date.month()); // Month (1-12) (u8)
+      Serial.println(gps.date.day()); // Day (1-31) (u8)
+      Serial.println(gps.time.value()); // Raw time in HHMMSSCC format (u32)
+      Serial.println(gps.time.hour()); // Hour (0-23) (u8)
+      Serial.println(gps.time.minute()); // Minute (0-59) (u8)
+      Serial.println(gps.time.second()); // Second (0-59) (u8)
+      Serial.println(gps.time.centisecond()); // 100ths of a second (0-99) (u8)
+      Serial.println(gps.speed.value()); // Raw speed in 100ths of a knot (i32)
+      Serial.println(gps.speed.knots()); // Speed in knots (double)
+      Serial.println(gps.speed.mph()); // Speed in miles per hour (double)
+      Serial.println(gps.speed.mps()); // Speed in meters per second (double)
+      Serial.println(gps.speed.kmph()); // Speed in kilometers per hour (double)
+      Serial.println(gps.course.value()); // Raw course in 100ths of a degree (i32)
+      Serial.println(gps.course.deg()); // Course in degrees (double)
+      Serial.println(gps.altitude.value()); // Raw altitude in centimeters (i32)
+      Serial.println(gps.altitude.meters()); // Altitude in meters (double)
+      Serial.println(gps.altitude.miles()); // Altitude in miles (double)
+      Serial.println(gps.altitude.kilometers()); // Altitude in kilometers (double)
+      Serial.println(gps.altitude.feet()); // Altitude in feet (double)
+      Serial.println(gps.satellites.value()); // Number of satellites in use (u32)
+      Serial.println(gps.hdop.value()); // Horizontal Dim. of Precision (100ths-i32)
+    }   
+    delay(2000);
   }
 }
 
 
 void configureUblox(byte *settingsArrayPointer) {
   byte gpsSetSuccess = 0;
-  lcdSerial.println("Configuring u-Blox GPS initial state...");
+  Serial.println("Configuring u-Blox GPS initial state...");
 
   //Generate the configuration string for Navigation Mode
   byte setNav[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, *settingsArrayPointer, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -100,7 +133,7 @@ void configureUblox(byte *settingsArrayPointer) {
 
   while (gpsSetSuccess < 3)
   {
-    lcdSerial.print("Setting Navigation Mode... ");
+    Serial.print("Setting Navigation Mode... ");
     sendUBX(&setNav[0], sizeof(setNav));  //Send UBX Packet
     gpsSetSuccess += getUBX_ACK(&setNav[2]); //Passes Class ID and Message ID to the ACK Receive function
     if (gpsSetSuccess == 5) {
@@ -115,7 +148,7 @@ void configureUblox(byte *settingsArrayPointer) {
     if (gpsSetSuccess == 6) gpsSetSuccess -= 4;
     if (gpsSetSuccess == 10) gpsStatus[0] = true;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("Navigation mode configuration failed.");
+  if (gpsSetSuccess == 3) Serial.println("Navigation mode configuration failed.");
   gpsSetSuccess = 0;
   while (gpsSetSuccess < 3) {
     Serial.print("Setting Data Update Rate... ");
@@ -124,32 +157,32 @@ void configureUblox(byte *settingsArrayPointer) {
     if (gpsSetSuccess == 10) gpsStatus[1] = true;
     if (gpsSetSuccess == 5 | gpsSetSuccess == 6) gpsSetSuccess -= 4;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("Data update mode configuration failed.");
+  if (gpsSetSuccess == 3) Serial.println("Data update mode configuration failed.");
   gpsSetSuccess = 0;
 
 
   while (gpsSetSuccess < 3 && settingsArrayPointer[6] == 0x00) {
-    lcdSerial.print("Deactivating NMEA GLL Messages ");
+    Serial.print("Deactivating NMEA GLL Messages ");
     sendUBX(setGLL, sizeof(setGLL));
     gpsSetSuccess += getUBX_ACK(&setGLL[2]);
     if (gpsSetSuccess == 10) gpsStatus[2] = true;
     if (gpsSetSuccess == 5 | gpsSetSuccess == 6) gpsSetSuccess -= 4;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("NMEA GLL Message Deactivation Failed!");
+  if (gpsSetSuccess == 3) Serial.println("NMEA GLL Message Deactivation Failed!");
   gpsSetSuccess = 0;
 
   while (gpsSetSuccess < 3 && settingsArrayPointer[7] == 0x00) {
-    lcdSerial.print("Deactivating NMEA GSA Messages ");
+    Serial.print("Deactivating NMEA GSA Messages ");
     sendUBX(setGSA, sizeof(setGSA));
     gpsSetSuccess += getUBX_ACK(&setGSA[2]);
     if (gpsSetSuccess == 10) gpsStatus[3] = true;
     if (gpsSetSuccess == 5 | gpsSetSuccess == 6) gpsSetSuccess -= 4;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("NMEA GSA Message Deactivation Failed!");
+  if (gpsSetSuccess == 3) Serial.println("NMEA GSA Message Deactivation Failed!");
   gpsSetSuccess = 0;
 
   while (gpsSetSuccess < 3 && settingsArrayPointer[8] == 0x00) {
-    lcdSerial.print("Deactivating NMEA GSV Messages ");
+    Serial.print("Deactivating NMEA GSV Messages ");
     sendUBX(setGSV, sizeof(setGSV));
     gpsSetSuccess += getUBX_ACK(&setGSV[2]);
     if (gpsSetSuccess == 10) gpsStatus[4] = true;
@@ -159,13 +192,13 @@ void configureUblox(byte *settingsArrayPointer) {
   gpsSetSuccess = 0;
 
   while (gpsSetSuccess < 3 && settingsArrayPointer[9] == 0x00) {
-    lcdSerial.print("Deactivating NMEA RMC Messages ");
+    Serial.print("Deactivating NMEA RMC Messages ");
     sendUBX(setRMC, sizeof(setRMC));
     gpsSetSuccess += getUBX_ACK(&setRMC[2]);
     if (gpsSetSuccess == 10) gpsStatus[5] = true;
     if (gpsSetSuccess == 5 | gpsSetSuccess == 6) gpsSetSuccess -= 4;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("NMEA RMC Message Deactivation Failed!");
+  if (gpsSetSuccess == 3) Serial.println("NMEA RMC Message Deactivation Failed!");
   gpsSetSuccess = 0;
 
   while (gpsSetSuccess < 3 && settingsArrayPointer[10] == 0x00) {
@@ -175,14 +208,14 @@ void configureUblox(byte *settingsArrayPointer) {
     if (gpsSetSuccess == 10) gpsStatus[6] = true;
     if (gpsSetSuccess == 5 | gpsSetSuccess == 6) gpsSetSuccess -= 4;
   }
-  if (gpsSetSuccess == 3) lcdSerial.println("NMEA VTG Message Deactivation Failed!");
+  if (gpsSetSuccess == 3) Serial.println("NMEA VTG Message Deactivation Failed!");
 
   gpsSetSuccess = 0;
   if (settingsArrayPointer[4] != 0x25) {
-    lcdSerial.print("Setting Port Baud Rate... ");
+    Serial.print("Setting Port Baud Rate... ");
     sendUBX(&setPortRate[0], sizeof(setPortRate));
     setBaud(settingsArrayPointer[4]);
-    lcdSerial.println("Success!");
+    Serial.println("Success!");
     delay(500);
   }
 }
@@ -230,11 +263,11 @@ byte getUBX_ACK(byte *msgID) {
     }
     if (i > 9) break;
     if ((millis() - ackWait) > 1500) {
-      lcdSerial.println("ACK Timeout");
+      Serial.println("ACK Timeout");
       return 5;
     }
     if (i == 4 && ackPacket[3] == 0x00) {
-      lcdSerial.println("NAK Received");
+      Serial.println("NAK Received");
       return 1;
     }
   }
@@ -244,13 +277,13 @@ byte getUBX_ACK(byte *msgID) {
     CK_B = CK_B + CK_A;
   }
   if (msgID[0] == ackPacket[6] && msgID[1] == ackPacket[7] && CK_A == ackPacket[8] && CK_B == ackPacket[9]) {
-    lcdSerial.println("Success!");
-    lcdSerial.print("ACK Received! ");
+    Serial.println("Success!");
+    Serial.print("ACK Received! ");
     printHex(ackPacket, sizeof(ackPacket));
     return 10;
   }
   else {
-    lcdSerial.print("ACK Checksum Failure: ");
+    Serial.print("ACK Checksum Failure: ");
     printHex(ackPacket, sizeof(ackPacket));
     delay(1000);
     return 1;
@@ -277,14 +310,14 @@ void printHex(uint8_t *data, uint8_t length) // prints 8-bit data in hex
   }
   tmp[length * 2] = 0;
   for (byte i = 0, j = 0; i < sizeof(tmp); i++) {
-    lcdSerial.print(tmp[i]);
+    Serial.print(tmp[i]);
     if (j == 1) {
-      lcdSerial.print(" ");
+      Serial.print(" ");
       j = 0;
     }
     else j++;
   }
-  lcdSerial.println();
+  Serial.println();
 }
 
 void setBaud(byte baudSetting) {
