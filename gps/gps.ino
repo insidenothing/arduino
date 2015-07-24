@@ -69,7 +69,13 @@ void loop()
       lcdSerial.print(gps.altitude.meters());
     }else{
       // Output to Debug
-      lcdSerial.write(220); 
+      Serial.print("Sentences that failed checksum=");
+      Serial.println(gps.failedChecksum());
+       
+      // Testing overflow in SoftwareSerial is sometimes useful too.
+      Serial.print("Soft Serial device overflowed? ");
+      Serial.println(gpsSerial.overflow() ? "YES!" : "No");
+      
       Serial.println(gps.location.lat(), 6); // Latitude in degrees (double)
       Serial.println(gps.location.lng(), 6); // Longitude in degrees (double)
       Serial.print(gps.location.rawLat().negative ? "-" : "+");
