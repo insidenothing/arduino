@@ -1,6 +1,9 @@
 #include <Wire.h>
+// Date and time functions using a DS1307 RTC connected via I2C and Wire lib
+// https://learn.adafruit.com/adafruit-data-logger-shield/using-the-real-time-clock
+#include "RTClib.h"
 #include <LiquidCrystal_I2C.h>
-//#include "pitches.h"
+#include "pitches.h"
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 //const int backlight =  13;
 
@@ -31,6 +34,7 @@ int lightrange = 0;
 
 int thisHour = 14; // 2 PM - Daylight
 
+RTC_DS1307 RTC;
 
 // Bits of Data to Tune Alerts
 int TUNE1 = 1;
@@ -75,6 +79,14 @@ void start_test () {
 
 void setup() {
   Serial.begin(9600);
+  Wire.begin();
+  RTC.begin();
+  if (! RTC.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    // uncomment it & upload to set the time, date and start run the RTC!
+    //RTC.adjust(DateTime(__DATE__, __TIME__));
+  }
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
   lcd.print("501 Spring Ave");
@@ -84,7 +96,6 @@ void setup() {
   pinMode(redLED, OUTPUT);
   pinMode(blueLED, OUTPUT);
   pinMode(greenLED, OUTPUT);
-  pinMode(speakerPin, OUTPUT);
   pinMode (dehumidifyerRELAY, OUTPUT);
   pinMode (watervalveRELAY, OUTPUT);
   pinMode (sprinklerRELAY, OUTPUT);
@@ -114,7 +125,20 @@ void setup() {
 
 void loop() {
   start_test ();
-  if (thisHour > 8 && thisHour < 17) {
+  DateTime now = RTC.now();
+  //Serial.print(now.year(), DEC);
+  //Serial.print('/');
+  //Serial.print(now.month(), DEC);
+  //Serial.print('/');
+  //Serial.print(now.day(), DEC);
+  //Serial.print(' ');
+  //Serial.print(now.hour(), DEC);
+  //Serial.print(':');
+  //Serial.print(now.minute(), DEC);
+  //Serial.print(':');
+  //Serial.print(now.second(), DEC);
+  //Serial.println();
+  if (now.hour() > 8 && now.hour() < 17) {
     // Lights on from 7AM to 6PM
     digitalWrite(growlightsRELAY, HIGH);
   } else {
@@ -165,7 +189,7 @@ void loop() {
   lcd.setCursor(2, 0);
   lcd.print('C');
   // 32% humidity at time of dev
-  if (dat[0] > 32) {
+  if (dat[0] > 40) {
     digitalWrite(dehumidifyerRELAY, HIGH);
   } else {
     digitalWrite(dehumidifyerRELAY, LOW);
@@ -179,7 +203,11 @@ void loop() {
   lcd.setCursor(13, 0);
   lcd.print(analogRead(LP));
   lcd.setCursor(0, 1);
-  lcd.print("SOIL");
+  lcd.print(now.hour(), DEC);
+  lcd.print(':');
+  lcd.print(now.minute(), DEC);
+  lcd.print(':');
+  lcd.print(now.second(), DEC);
   // outside plants measure ~300
   // dry indoor soil (not livable) 50-100
   if (analogRead(SM) < 200) {
@@ -188,26 +216,32 @@ void loop() {
   } else {
     digitalWrite(sprinklerRELAY, LOW);
   }
-  lcd.setCursor(5, 1);
-  lcd.print(analogRead(SM));
   lcd.setCursor(9, 1);
-  lcd.print("H2O");
+  lcd.print(analogRead(SM));
+  lcd.setCursor(12, 1);
+  lcd.print("/");
   // Approximate values with a glass of water
   // 680+ Sound Buzzer - About to Contact Electronics
   // 640 Submerged
   // 600 1/2 Submerged
   // 500 Tip in Water
   // -400 Out of Water
-  if (analogRead(WL) > 620) {
+  if (analogRead(WL) < 100) {
+    digitalWrite(watervalveRELAY, HIGH);
+    noTone(speakerPin);
+  } else if (analogRead(WL) > 680) {
     digitalWrite(watervalveRELAY, LOW);
-    tone(speakerPin, 1000, 20);
-  } else if (analogRead(WL) < 600) {
+    tone(speakerPin, 2000, 1000);
+  } else if (analogRead(WL) < 500) {
     // run refill water pump to half sensor
     digitalWrite(watervalveRELAY, HIGH);
-    tone(speakerPin, 100, 20);
-  } else {
-    digitalWrite(watervalveRELAY, LOW);
+    tone(speakerPin, 100, 100);
+  } else if (analogRead(WL) < 250) {
+    digitalWrite(watervalveRELAY, HIGH);
     noTone(speakerPin);
+  } else {
+    noTone(speakerPin);
+    digitalWrite(watervalveRELAY, LOW);
   }
   lcd.setCursor(13, 1);
   lcd.print(analogRead(WL));
