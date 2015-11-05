@@ -14,7 +14,7 @@
 //
 
 // How many leds are in the strip?
-#define NUM_LEDS 2
+#define NUM_LEDS 8
 
 // Data pin that led data will be written out over
 #define DATA_PIN 4
@@ -51,11 +51,28 @@ void loop() {
     for (int i = 0; i < 255; i += 1) {
       rgbColour[decColour] -= 1;
       rgbColour[incColour] += 1;
-      leds[0] = CRGB(0, rgbColour[1], 0);
-      leds[1] = CRGB(0, rgbColour[0], 0);
-      leds[2] = CRGB(0, rgbColour[2], 0);
+      leds[0] = CRGB(0, i, 0);
+      leds[1] = CRGB(0, i, 0);
+      leds[2] = CRGB(0, i, 0);
+      leds[3] = CRGB(0, i, 0);
+      leds[4] = CRGB(0, i, 0);
+      leds[5] = CRGB(0, i, 0);
+      leds[6] = CRGB(0, i, 0);
+      leds[7] = CRGB(0, i, 0);
+      
       FastLED.show();
-      delay(5);
+      delay(i);
+      leds[0] = CRGB(0, 0, 0);
+      leds[1] = CRGB(0, 0, 0);
+      leds[2] = CRGB(0, 0, 0);
+      leds[3] = CRGB(0, 0, 0);
+      leds[4] = CRGB(0, 0, 0);
+      leds[5] = CRGB(0, 0, 0);
+      leds[6] = CRGB(0, 0, 0);
+      leds[7] = CRGB(0, 0, 0);
+      FastLED.show();
+      delay(i);
+
     }
   }
 }
