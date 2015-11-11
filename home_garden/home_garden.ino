@@ -57,7 +57,7 @@ byte read_data () {
 
 // DH Code
 void start_test () {
-  //Serial.print("start_test() load");
+  Serial.println("start_test()");
   delay (1000);
   //Serial.print("start_test() begin");
   digitalWrite (DHpin, LOW); // bus down, send start signal
@@ -79,19 +79,23 @@ void start_test () {
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("setup()");
   Wire.begin();
   RTC.begin();
   if (! RTC.isrunning()) {
     Serial.println("RTC is NOT running!");
     // following line sets the RTC to the date & time this sketch was compiled
     // uncomment it & upload to set the time, date and start run the RTC!
-    //RTC.adjust(DateTime(__DATE__, __TIME__));
+    RTC.adjust(DateTime(__DATE__, __TIME__));
+    Serial.println("Setting Date to Sketch");
+    //Serial.println(DateTime(__DATE__, __TIME__));
   }
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
   lcd.print("501 Spring Ave");
   lcd.setCursor(0, 1);
   lcd.print("Home Garden");
+  Serial.println("Setting output pins");
   pinMode (DHpin, OUTPUT);
   pinMode(redLED, OUTPUT);
   pinMode(blueLED, OUTPUT);
@@ -141,9 +145,12 @@ void loop() {
   if (now.hour() > 8 && now.hour() < 17) {
     // Lights on from 7AM to 6PM
     digitalWrite(growlightsRELAY, HIGH);
+    Serial.print("Lights On: ");
   } else {
     digitalWrite(growlightsRELAY, LOW);
+    Serial.print("Lights Off: ");
   }
+  Serial.println(now.hour());
   // http://www.seeedstudio.com/wiki/Grove_-_Gas_Sensor(MQ2)
   // MQ-2 Gas Detection : Calibrated
   float sensor_volt;
@@ -210,12 +217,17 @@ void loop() {
   lcd.print(now.second(), DEC);
   // outside plants measure ~300
   // dry indoor soil (not livable) 50-100
-  if (analogRead(SM) < 200) {
+  if (analogRead(SM) < 650 && analogRead(WL) < 500) {
     // water plants to half sensor level
     digitalWrite(sprinklerRELAY, HIGH);
+    Serial.print("Water On: ");
   } else {
     digitalWrite(sprinklerRELAY, LOW);
+    Serial.print("Water Off: ");
   }
+  Serial.print(analogRead(SM));
+  Serial.print("/");
+  Serial.println(analogRead(WL));
   lcd.setCursor(9, 1);
   lcd.print(analogRead(SM));
   lcd.setCursor(12, 1);
@@ -226,8 +238,11 @@ void loop() {
   // 600 1/2 Submerged
   // 500 Tip in Water
   // -400 Out of Water
+  
+  /*
   if (analogRead(WL) < 100) {
     digitalWrite(watervalveRELAY, HIGH);
+    Serial.println("Water On");
     noTone(speakerPin);
   } else if (analogRead(WL) > 680) {
     digitalWrite(watervalveRELAY, LOW);
@@ -243,6 +258,7 @@ void loop() {
     noTone(speakerPin);
     digitalWrite(watervalveRELAY, LOW);
   }
+  */
   lcd.setCursor(13, 1);
   lcd.print(analogRead(WL));
   delay(1000);
