@@ -22,6 +22,7 @@ const int watervalveRELAY =  4;
 const int sprinklerRELAY =  3;
 const int growlightsRELAY =  2;
 
+// begin xbee
 XBee xbee = XBee();
 unsigned long start = millis();
 // allocate two bytes for to hold a 10-bit analog reading
@@ -34,10 +35,9 @@ Tx16Request tx = Tx16Request(0x1874, payload, sizeof(payload));
 //Tx64Request tx = Tx64Request(addr64, payload, sizeof(payload));
 TxStatusResponse txStatus = TxStatusResponse();
 int pin5 = 0;
-
 int statusLed = 9;
 int errorLed = 11;
-
+// end xbee
 
 
 
@@ -77,7 +77,7 @@ byte read_data () {
 
 // DH Code
 void start_test () {
-  Serial.println("start_test()");
+  //Serial.println("start_test()");
   delay (1000);
   //Serial.print("start_test() begin");
   digitalWrite (DHpin, LOW); // bus down, send start signal
@@ -100,23 +100,25 @@ void start_test () {
 void setup() {
   Serial.begin(9600);
   xbee.setSerial(Serial);
-  Serial.println("setup()");
+  //Serial.println("setup()");
   Wire.begin();
   RTC.begin();
+  lcd.begin(16, 2);
   if (! RTC.isrunning()) {
-    Serial.println("RTC is NOT running!");
+    lcd.setCursor(0, 0);
+    lcd.print("RTC is NOT running!");
     // following line sets the RTC to the date & time this sketch was compiled
     // uncomment it & upload to set the time, date and start run the RTC!
     RTC.adjust(DateTime(__DATE__, __TIME__));
-    Serial.println("Setting Date to Sketch");
-    //Serial.println(DateTime(__DATE__, __TIME__));
+    lcd.setCursor(0, 1);
+    lcd.print("Setting Date to Sketch");
   }
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
   lcd.print("501 Spring Ave");
   lcd.setCursor(0, 1);
   lcd.print("Home Garden");
-  Serial.println("Setting output pins");
+  //Serial.println("Setting output pins");
   pinMode (DHpin, OUTPUT);
   pinMode(redLED, OUTPUT);
   pinMode(blueLED, OUTPUT);
@@ -162,6 +164,7 @@ void loop() {
     // flash TX indicator
     flashLed(statusLed, 1, 100);
   }
+  
   if (xbee.readPacket(5000)) {
     // got a response!
 
@@ -203,15 +206,18 @@ void loop() {
   //Serial.print(':');
   //Serial.print(now.second(), DEC);
   //Serial.println();
+  Serial.print("[hour:");
+  Serial.print(now.hour());
+  Serial.println("]");
   if (now.hour() > 8 && now.hour() < 17) {
     // Lights on from 7AM to 6PM
     digitalWrite(growlightsRELAY, HIGH);
-    Serial.print("Lights On: ");
+    //Serial.print("Lights On: ");
   } else {
     digitalWrite(growlightsRELAY, LOW);
-    Serial.print("Lights Off: ");
+    //Serial.print("Lights Off: ");
   }
-  Serial.println(now.hour());
+  //Serial.println(now.hour());
   // http://www.seeedstudio.com/wiki/Grove_-_Gas_Sensor(MQ2)
   // MQ-2 Gas Detection : Calibrated
   float sensor_volt;
@@ -229,12 +235,18 @@ void loop() {
   //Serial.println(ratio);
   //Serial.print("\n\n");
   // this will be adjusted when we know a "good" value, we can test against outdoors
+  Serial.print("[RS_gas:");
+  Serial.print(RS_gas);
+  Serial.println("]");
   if (RS_gas < TUNE1) {
     digitalWrite(redLED, HIGH);
   }
   // http://playground.arduino.cc/Learning/PhotoResistor
   // Write the value of the photoresistor to the serial monitor.
   //Serial.println(analogRead(LP));
+  Serial.print("[light:");
+  Serial.print(analogRead(LP));
+  Serial.println("]");
   if (analogRead(LP) > daylight) {
     char* test = "MAX LIGHT";
     MYalert (test);
@@ -245,6 +257,15 @@ void loop() {
     MYalert (test);
     night = analogRead(LP);
   }
+  Serial.print("[light_max:");
+  Serial.print(daylight);
+  Serial.println("]");
+  Serial.print("[light_min:");
+  Serial.print(night);
+  Serial.println("]");
+
+
+  
   //Serial.println(night + 200);
   if (analogRead(LP) < night + 200) {
     digitalWrite(blueLED, HIGH);
@@ -256,12 +277,23 @@ void loop() {
   lcd.print(dat [2], DEC);
   lcd.setCursor(2, 0);
   lcd.print('C');
+
+  Serial.print("[temp:");
+  Serial.print(dat [2], DEC);
+  Serial.println("]");
+
+  
   // 32% humidity at time of dev
   if (dat[0] > 40) {
     digitalWrite(dehumidifyerRELAY, HIGH);
   } else {
     digitalWrite(dehumidifyerRELAY, LOW);
   }
+
+  Serial.print("[humidity:");
+  Serial.print(dat [0], DEC);
+  Serial.println("]");
+  
   lcd.setCursor(4, 0);
   lcd.print(dat [0], DEC);
   lcd.setCursor(6, 0);
@@ -278,17 +310,23 @@ void loop() {
   lcd.print(now.second(), DEC);
   // outside plants measure ~300
   // dry indoor soil (not livable) 50-100
+  Serial.print("[soil:");
+  Serial.print(analogRead(SM));
+  Serial.println("]");
+  Serial.print("[water:");
+  Serial.print(analogRead(WL));
+  Serial.println("]");
   if (analogRead(SM) < 650 && analogRead(WL) < 500) {
     // water plants to half sensor level
     digitalWrite(sprinklerRELAY, HIGH);
-    Serial.print("Water On: ");
+    //Serial.print("Water On: ");
   } else {
     digitalWrite(sprinklerRELAY, LOW);
-    Serial.print("Water Off: ");
+    //Serial.print("Water Off: ");
   }
-  Serial.print(analogRead(SM));
-  Serial.print("/");
-  Serial.println(analogRead(WL));
+  //Serial.print(analogRead(SM));
+  //Serial.print("/");
+  //Serial.println(analogRead(WL));
   lcd.setCursor(9, 1);
   lcd.print(analogRead(SM));
   lcd.setCursor(12, 1);
