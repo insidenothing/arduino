@@ -4,6 +4,7 @@
 #include "RTClib.h"
 #include <LiquidCrystal_I2C.h>
 #include "pitches.h"
+#include <XBee.h>
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 //const int backlight =  13;
 
@@ -20,6 +21,25 @@ const int dehumidifyerRELAY =  5;
 const int watervalveRELAY =  4;
 const int sprinklerRELAY =  3;
 const int growlightsRELAY =  2;
+
+XBee xbee = XBee();
+unsigned long start = millis();
+// allocate two bytes for to hold a 10-bit analog reading
+uint8_t payload[] = { 0, 0 };
+// 16-bit addressing: Enter address of remote XBee, typically the coordinator
+Tx16Request tx = Tx16Request(0x1874, payload, sizeof(payload));
+// 64-bit addressing: This is the SH + SL address of remote XBee
+//XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x4008b490);
+// unless you have MY on the receiving radio set to FFFF, this will be received as a RX16 packet
+//Tx64Request tx = Tx64Request(addr64, payload, sizeof(payload));
+TxStatusResponse txStatus = TxStatusResponse();
+int pin5 = 0;
+
+int statusLed = 9;
+int errorLed = 11;
+
+
+
 
 // Analog Sensor Pins
 int MQ = A0; // Gas Probe
@@ -79,6 +99,7 @@ void start_test () {
 
 void setup() {
   Serial.begin(9600);
+  xbee.setSerial(Serial);
   Serial.println("setup()");
   Wire.begin();
   RTC.begin();
@@ -129,6 +150,46 @@ void setup() {
 
 void loop() {
   start_test ();
+
+ if (millis() - start > 15000) {
+    // break down 10-bit reading into two bytes and place in payload
+    pin5 = analogRead(5);
+    payload[0] = pin5 >> 8 & 0xff;
+    payload[1] = pin5 & 0xff;
+
+    xbee.send(tx);
+
+    // flash TX indicator
+    flashLed(statusLed, 1, 100);
+  }
+  if (xbee.readPacket(5000)) {
+    // got a response!
+
+    // should be a znet tx status
+    if (xbee.getResponse().getApiId() == TX_STATUS_RESPONSE) {
+      xbee.getResponse().getZBTxStatusResponse(txStatus);
+
+      // get the delivery status, the fifth byte
+      if (txStatus.getStatus() == SUCCESS) {
+        // success.  time to celebrate
+        flashLed(statusLed, 5, 50);
+      } else {
+        // the remote XBee did not receive our packet. is it powered on?
+        flashLed(errorLed, 3, 500);
+      }
+    }
+  } else if (xbee.getResponse().isError()) {
+    //nss.print("Error reading packet.  Error code: ");
+    //nss.println(xbee.getResponse().getErrorCode());
+    // or flash error led
+  } else {
+    // local XBee did not provide a timely TX Status Response.  Radio is not configured properly or connected
+    flashLed(errorLed, 2, 50);
+  }
+
+
+
+
   DateTime now = RTC.now();
   //Serial.print(now.year(), DEC);
   //Serial.print('/');
@@ -238,7 +299,7 @@ void loop() {
   // 600 1/2 Submerged
   // 500 Tip in Water
   // -400 Out of Water
-  
+
   /*
   if (analogRead(WL) < 100) {
     digitalWrite(watervalveRELAY, HIGH);
@@ -286,3 +347,18 @@ void MYalert (char* msg) {
 
 }
 
+
+
+
+void flashLed(int pin, int times, int wait) {
+
+  for (int i = 0; i < times; i++) {
+    digitalWrite(pin, HIGH);
+    delay(wait);
+    digitalWrite(pin, LOW);
+
+    if (i + 1 < times) {
+      delay(wait);
+    }
+  }
+}
