@@ -152,7 +152,7 @@ void setup() {
 
 void loop() {
   start_test ();
-
+/*
  if (millis() - start > 15000) {
     // break down 10-bit reading into two bytes and place in payload
     pin5 = analogRead(5);
@@ -164,7 +164,7 @@ void loop() {
     // flash TX indicator
     flashLed(statusLed, 1, 100);
   }
-  
+  */
   if (xbee.readPacket(5000)) {
     // got a response!
 
@@ -316,7 +316,7 @@ void loop() {
   Serial.print("[water:");
   Serial.print(analogRead(WL));
   Serial.println("]");
-  if (analogRead(SM) < 650 && analogRead(WL) < 500) {
+  if (analogRead(SM) < 100) {
     // water plants to half sensor level
     digitalWrite(sprinklerRELAY, HIGH);
     //Serial.print("Water On: ");
