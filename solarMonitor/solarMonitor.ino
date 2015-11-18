@@ -4,7 +4,10 @@ An Arduino DVM based on voltage divider concept
 T.K.Hareendran
 */
 
-
+const int buttonPinUp = 2;     // the number of the pushbutton pin
+const int buttonPinDown = 3;     // the number of the pushbutton pin
+int buttonStateUp;         // variable for reading the pushbutton status
+int buttonStateDown;         // variable for reading the pushbutton status
 int ledRed = 9;
 int ledBlue = 11;
 int ledGreen = 10;
@@ -21,8 +24,8 @@ float R1 = 100000.0; // resistance of R1 (100K) -see text!
 float R2 = 10000.0; // resistance of R2 (10K) - see text!
 
 // tuned to 14v
-int offset1 = 5.00;
-int offset2 = 5.00;
+float offset = 5.00;
+
 
 void setup() {
   Serial.begin(9600);
@@ -30,19 +33,46 @@ void setup() {
   pinMode(solar2, INPUT);
   pinMode(local5v, INPUT);
   pinMode(local33v, INPUT);
+  pinMode(buttonPinUp, INPUT);
+  pinMode(buttonPinDown, INPUT);
   pinMode(ledRed, OUTPUT);
   pinMode(ledBlue, OUTPUT);
   pinMode(ledGreen, OUTPUT);
   Serial.println("DC VOLTMETER");
 }
 void loop() {
+
+buttonStateUp = digitalRead(buttonPinUp);
+buttonStateDown = digitalRead(buttonPinDown);
+
+if (buttonStateUp == HIGH) {
+    Serial.println("up");
+    digitalWrite(ledGreen, HIGH);
+    offset = offset + 0.01;
+    delay(250);
+  }
+
+  if (buttonStateDown == HIGH) {
+    Serial.println("down");
+    digitalWrite(ledRed, HIGH);
+    offset = offset - 0.01;
+    delay(250);
+  }
+  digitalWrite(ledGreen, LOW);
+  digitalWrite(ledRed, LOW);
+  digitalWrite(ledBlue, LOW);
+
+  Serial.print("[offset:");
+  Serial.print(offset);
+  Serial.println("]");
+  
   // read the value at analog input
   int solarValue1 = analogRead(solar1);
   int solarValue2 = analogRead(solar2);
   int sensorValue5 = analogRead(local5v);
   int sensorValue33 = analogRead(local33v);
-  vout1 = (solarValue1 * offset1) / 1024.0;
-  vout2 = (solarValue2 * offset2) / 1024.0;
+  vout1 = (solarValue1 * offset) / 1024.0;
+  vout2 = (solarValue2 * offset) / 1024.0;
   float voltage5 = sensorValue5 * (5.0 / 1023.0);
   float voltage33 = sensorValue33 * (5.0 / 1023.0);
   vin1 = vout1 / (R2 / (R1 + R2));
@@ -64,39 +94,25 @@ void loop() {
   }
   
   if (voltage5 < 5.00) {
-    digitalWrite(ledBlue, HIGH);
+    digitalWrite(ledRed, HIGH);
     Serial.print("[local5:");
     Serial.print(voltage5);
     Serial.println("]");
     delay(1000);
-    digitalWrite(ledBlue, LOW);
+    digitalWrite(ledRed, LOW);
   }
   
-  if (vin1 < 13.00) {
-    digitalWrite(ledGreen, HIGH);
-    delay(100);
-    digitalWrite(ledGreen, LOW);
-  }
+  
   Serial.print("[solar1:");
   Serial.print(vin1);
   Serial.println("]");
+  
   delay(1000);
   
-  if (vin2 < 13.00) {
-    digitalWrite(ledGreen, HIGH);
-    delay(50);
-    digitalWrite(ledGreen, LOW);
-    delay(50);
-    digitalWrite(ledGreen, HIGH);
-    delay(50);
-    digitalWrite(ledGreen, LOW);
-  }
+ 
   Serial.print("[solar2:");
   Serial.print(vin2);
   Serial.println("]");
 
-  digitalWrite(ledGreen, LOW);
-  digitalWrite(ledRed, LOW);
-  digitalWrite(ledBlue, LOW);
   delay(1000);
 }
